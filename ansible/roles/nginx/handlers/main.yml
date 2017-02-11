@@ -1,0 +1,6 @@
+- include: "../../common/iptables/iptables-handlers.yml"
+
+- name: Restart Nginx
+  service: name=nginx state=reloaded
+  become: true
+

@@ -1,0 +1,20 @@
+metricbeat.modules:
+- module: system
+  metricsets:
+    - cpu
+    - filesystem
+    - memory
+    - network
+    - process
+  enabled: true
+  period: 60s
+  processes: ['telnet.*']
+  cpu_ticks: false
+
+output.logstash:
+  hosts: ["server.generic.local:5044"]
+  ssl.certificate_authorities: ["/etc/metricbeat/ssl/ca.crt"]
+  # Certificate for SSL client authentication
+  ssl.certificate: "/etc/metricbeat/ssl/honeypot1.crt"
+  # Client Certificate Key
+  ssl.key: "/etc/metricbeat/ssl/honeypot1.key"

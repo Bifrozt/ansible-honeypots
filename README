@@ -1,0 +1,15 @@
+Ansible Honeypot scripts.
+-------------------------
+
+The ansible playbooks in this repository build an elasticsearch central server with logstash listening for input.
+
+Honeypot ansible creates then build various honeypots with locked down IPTables and Metricbeats/Filebeats for shipping logs and metrics.
+All communication kis encrypted with TLS. A PKI needs to be created to ensure all honeypots and central server trust each other.
+
+The following roles require certificates:
+
+logstash
+metricbeat
+filebeat
+
+ 

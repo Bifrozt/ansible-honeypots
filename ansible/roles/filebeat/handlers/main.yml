@@ -1,0 +1,5 @@
+- include: "../../common/iptables/iptables-handlers.yml"
+
+- name: Restart Filebeat
+  service: name=filebeat state=restarted
+  become: true

@@ -1,0 +1,6 @@
+- include: "{{ role_path }}/../common/iptables/iptables-handlers.yml"
+
+- name: Restart Logstash
+  service: name=logstash state=restarted
+  become: true
+

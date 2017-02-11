@@ -1,0 +1,2 @@
+- include: "../../common/iptables/iptables-handlers.yml"
+- include: "../../filebeat/handlers/main.yml"

@@ -1,0 +1,5 @@
+- include: "../../common/iptables/iptables-handlers.yml"
+
+- name: Restart Metricbeat
+  service: name=metricbeat state=restarted
+  become: true

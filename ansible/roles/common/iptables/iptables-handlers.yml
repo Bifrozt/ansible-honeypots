@@ -1,0 +1,3 @@
+- name: IPTables Save
+  shell: iptables-save > /etc/iptables-rules
+  become: true

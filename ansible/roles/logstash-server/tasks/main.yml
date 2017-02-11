@@ -1,0 +1,56 @@
+- include: "{{ role_path }}/../common/iptables/iptables-enable-apt.yml"
+
+- name: Install OpenJDK
+  apt: package=openjdk-8-jre update_cache=true state=present
+  become: true
+
+- name: Check if logstash is installed
+  command: dpkg-query -W logstash
+  register: logstash_check_deb
+  failed_when: logstash_check_deb.rc > 1
+  changed_when: logstash_check_deb.rc == 1
+  become: true
+
+- name: Download logstash DEB
+  get_url: url=https://artifacts.elastic.co/downloads/logstash/logstash-5.1.2.deb dest=/tmp/logstash.deb
+  when: logstash_check_deb.rc == 1
+
+- name: Install logstash
+  apt: deb=/tmp/logstash.deb
+  become: true
+  when: logstash_check_deb.rc == 1
+
+- name: Copy over certificates
+  copy: src="{{ role_path }}/files/ssl" dest=/etc/logstash/
+  become: true
+
+- name: Copy over sub config files
+  copy: src="{{ role_path }}/files/conf.d" dest="/etc/logstash/"
+  become: true
+  notify: Restart Logstash
+
+- name: Add Logstash user to ADM group
+  user: name=logstash groups=adm append=yes
+  become: true
+
+- name: Ensure Service is running
+  service: enabled=yes state=started name=logstash
+  become: true
+
+- include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"
+
+- name: Create Allow Logstash Chain
+  shell: iptables -N LOGSTASH-IN
+  become: true
+  notify: IPTables Save
+
+- name: Redirect allowed to logstash chain
+  iptables: chain=TCP-IN protocol=tcp state=present action=insert ctstate=NEW destination_port=5044 jump=LOGSTASH-IN
+  become: true
+  notify: IPTables Save
+
+- name: Allow FileBeats Iptables IN
+  iptables: chain=LOGSTASH-IN protocol=tcp state=present action=insert ctstate=NEW destination_port=5044 source="{{ hostvars[item]['inventory_hostname'] }}" jump=LOGALLOW
+  become: true
+  notify: IPTables Save
+  with_items: "{{ groups['honeypot'] }}"

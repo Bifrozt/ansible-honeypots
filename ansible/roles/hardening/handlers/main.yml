@@ -1,0 +1,3 @@
+- name: Apply Iptables
+  shell: iptables-restore < /etc/iptables-rules
+  become: true

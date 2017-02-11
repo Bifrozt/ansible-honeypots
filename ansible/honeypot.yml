@@ -1,0 +1,7 @@
+---	
+- hosts: honeypot
+  roles:
+    - hardening
+    - filebeat
+    - hp-telnet
+    - metricbeat

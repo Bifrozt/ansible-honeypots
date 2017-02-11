@@ -1,0 +1,35 @@
+- include: "{{ role_path }}/../common/iptables/iptables-enable-apt.yml"
+
+- name: Install MongoDB
+  apt: name=mongodb state=present
+  become: true
+
+- name: Install NodeJS
+  apt: name=nodejs state=present
+  become: true
+
+- name: install npm
+  apt: name=npm state=present
+  become: true
+
+- name: install gcc
+  apt: name=gcc state=present
+  become: true
+
+- name: install gpp
+  apt: name=gpp state=present
+  become: true
+
+- name: install git
+  apt: name=git state=present
+  become: true
+
+- name: Get GIT Repo
+  shell: git clone https://github.com/Plazmaz/MongoDB-HoneyProxy.git chdir=/opt creates=/opt/MongoDB-HoneyProxy
+  become: true
+
+- name: Install MongoDBHP
+  shell: npm install chdir=/opt/MongoDB-HoneyProxy
+  become: true
+
+- include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"

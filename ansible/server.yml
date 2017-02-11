@@ -1,0 +1,12 @@
+---	
+- hosts: server
+  vars_prompt:
+    - name: "username"
+      prompt: "What username to use for Elasticsearch access?"
+      private: no
+    - name: "password"
+      prompt: "Password"
+  roles:
+    - hardening
+    - elasticsearch
+    - logstash-server

@@ -1,0 +1,59 @@
+- include: "{{ role_path }}/../common/iptables/iptables-enable-apt.yml"
+
+- name: Install OpenJDK
+  apt: package=openjdk-8-jre update_cache=true state=present
+  become: true
+
+- name: Check if elasticsearch is installed
+  command: dpkg-query -W elasticsearch
+  register: elasticsearch_check_deb
+  failed_when: elasticsearch_check_deb.rc > 1
+  changed_when: elasticsearch_check_deb.rc == 1
+  become: true
+
+- name: Download Elasticsearch DEB
+  get_url: url=https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.1.2.deb dest=/tmp/elasticsearch.deb
+  when: elasticsearch_check_deb.rc == 1
+
+- name: Install Elasticsearch
+  apt: deb=/tmp/elasticsearch.deb
+  become: true
+  when: elasticsearch_check_deb.rc == 1
+
+- name: Start Elasticsearch
+  service: name=elasticsearch enabled=yes state=started
+  become: true
+
+- name: Check if kibana is installed
+  command: dpkg-query -W kibana
+  register: kibana_check_deb
+  failed_when: kibana_check_deb.rc > 1
+  changed_when: kibana_check_deb.rc == 1
+  become: true
+
+- name: Download KIbana DEB
+  get_url: url=https://artifacts.elastic.co/downloads/kibana/kibana-5.1.2-amd64.deb dest=/tmp/kibana.deb
+  when: kibana_check_deb.rc == 1
+
+- name: Install Kibana
+  apt: deb=/tmp/kibana.deb
+  when: kibana_check_deb.rc == 1
+  become: true
+
+- name: Start Kibana
+  service: name=kibana enabled=yes state=started
+  become: true
+
+- name: Copy Metricbeat template file
+  copy: src="{{ role_path }}/files/metricbeat.template.json" dest="/tmp/metricbeat.template.json"
+
+- name: Add Metricbeat template
+  shell: curl -XPUT 'http://localhost:9200/_template/metricbeat' -d@/tmp/metricbeat.template.json
+
+#- name: Copy Metricbeat Dashboard file
+#  copy: src="{{ role_path }}/files/import_dashboards_metricbeat" dest="/tmp/import_dashboards_metricbeat" mode="u=rwx,g=rwx,o=rx"
+
+#- name: Add Metricbeat Dashboards
+#  shell: /tmp/./import_dashboards_metricbeat
+
+- include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"

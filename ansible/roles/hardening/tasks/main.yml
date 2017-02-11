@@ -1,0 +1,15 @@
+- name: Copy over base Iptables Rules
+  copy: src="{{ role_path }}/files/iptables-rules" dest=/etc/iptables-rules
+  become: true
+
+- name: Create IPTables IFUp script
+  copy: content="#!/bin/bash\niptables-restore < /etc/iptables-rules" dest=/etc/network/if-pre-up.d/iptables 
+  become: true
+
+- name: Ensure Iptables script is executable
+  file: path=/etc/network/if-pre-up.d/iptables mode='u=rwx,g=rx,o=rx'
+  become: true
+
+- name: Apply Iptables
+  shell: iptables-restore < /etc/iptables-rules
+  become: true

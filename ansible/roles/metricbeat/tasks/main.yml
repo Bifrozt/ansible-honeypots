@@ -1,0 +1,57 @@
+- include: "{{ role_path }}/../common/iptables/iptables-enable-apt.yml"
+
+- name: Check if metricbeat is installed
+  command: dpkg-query -W metricbeat
+  register: metricbeat_check_deb
+  failed_when: metricbeat_check_deb.rc > 1
+  changed_when: metricbeat_check_deb.rc == 1
+  become: true
+
+- name: Download metricbeat DEB
+  get_url: url=https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-5.2.0-amd64.deb dest=/tmp/metricbeat.deb
+  when: metricbeat_check_deb.rc == 1
+
+- include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"
+
+- name: Install Metricbeat
+  apt: deb=/tmp/metricbeat.deb
+  become: true
+  when: metricbeat_check_deb.rc == 1
+
+- name: Copy over CA Cert
+  copy: src="{{ role_path }}/files/ssl/ca.crt" dest="/etc/metricbeat/ssl/ca.crt"
+  become: true
+  notify: Restart Metricbeat
+
+- name: "Copy over Client {{ ansible_hostname }} Cert"
+  copy: src="{{ role_path }}/files/ssl/{{ ansible_hostname }}.crt" dest="/etc/metricbeat/ssl/client.crt"
+  become: true
+  notify: Restart Metricbeat
+
+- name: "Copy over Client {{ ansible_hostname }} Key"
+  copy: src="{{ role_path }}/files/ssl/{{ ansible_hostname }}.key" dest="/etc/metricbeat/ssl/client.key"
+  become: true
+  notify: Restart Metricbeat
+
+- name: Create config Directory
+  file: state=directory path=/etc/metricbeat/conf.d 
+  become: true
+
+- name: Copy over config
+  copy: src="{{ role_path }}/files/metricbeat.yml" dest="/etc/metricbeat/metricbeat.yml"
+  notify: Restart Metricbeat
+  become: true
+
+- name: Allow Metricbeat Out
+  iptables: chain=TCP-OUT protocol=tcp state=present action=insert ctstate=NEW destination="{{ hostvars[groups['server'][0]]['inventory_hostname'] }}" destination_port=5044 jump=ACCEPT
+  become: true
+  notify: IPTables Save
+
+- name: Insert server host entry
+  lineinfile: name=/etc/hosts line="{{ hostvars[groups['server'][0]]['inventory_hostname'] }}   server.generic.local"
+  become: true
+
+- name: Ensure Metricbeat is started
+  service: name=metricbeat state=started enabled=yes
+  become: true
+

@@ -1,0 +1,56 @@
+- include: "{{ role_path }}/../common/iptables/iptables-enable-apt.yml"
+
+- name: Check if filebeat is installed
+  command: dpkg-query -W filebeat
+  register: filebeat_check_deb
+  failed_when: filebeat_check_deb.rc > 1
+  changed_when: filebeat_check_deb.rc == 1
+  become: true
+
+- name: Download Filebeat DEB
+  get_url: url=https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-5.1.2-amd64.deb dest=/tmp/filebeat.deb
+  when: filebeat_check_deb.rc == 1
+
+- include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"
+
+- name: Install Filebeat
+  apt: deb=/tmp/filebeat.deb
+  become: true
+  when: filebeat_check_deb.rc == 1
+
+- name: Copy over CA Cert
+  copy: src="{{ role_path }}/files/ssl/ca.crt" dest="/etc/filebeat/ssl/ca.crt"
+  become: true
+  notify: Restart Filebeat
+
+- name: "Copy over Client {{ ansible_hostname }} Cert"
+  copy: src="{{ role_path }}/files/ssl/{{ ansible_hostname }}.crt" dest="/etc/filebeat/ssl/client.crt"
+  become: true
+  notify: Restart Filebeat
+
+- name: "Copy over Client {{ ansible_hostname }} Key"
+  copy: src="{{ role_path }}/files/ssl/{{ ansible_hostname }}.key" dest="/etc/filebeat/ssl/client.key"
+  become: true
+  notify: Restart Filebeat
+
+- name: Create config Directory
+  file: state=directory path=/etc/filebeat/conf.d 
+  become: true
+
+- name: Copy over config
+  copy: src="{{ role_path }}/files/filebeat.yml" dest="/etc/filebeat/filebeat.yml"
+  notify: Restart Filebeat
+  become: true
+
+- name: Allow Filebeats Out
+  iptables: chain=TCP-OUT protocol=tcp state=present action=insert ctstate=NEW destination="{{ hostvars[groups['server'][0]]['inventory_hostname'] }}" destination_port=5044 jump=ACCEPT
+  become: true
+  notify: IPTables Save
+
+- name: Insert server host entry
+  lineinfile: name=/etc/hosts line="{{ hostvars[groups['server'][0]]['inventory_hostname'] }}   server.generic.local"
+  become: true
+
+- name: Ensure Filebeat is started
+  service: name=filebeat state=started enabled=yes
+  become: true

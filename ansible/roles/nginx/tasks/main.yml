@@ -1,0 +1,48 @@
+- include: "{{ role_path }}/../common/iptables/iptables-enable-apt.yml"
+
+- name: install nginx
+  apt: package=nginx state=present
+  become: true
+
+- name: install apache2utils
+  apt: package=apache2-utils state=present
+  become: true
+
+- name: install python-passlib
+  apt: package=python-passlib state=present
+  become: true
+
+- include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"
+
+- name: Create HTPasswd file
+  htpasswd: path=/etc/nginx/passfile name="{{ username }}" password="{{ password }}" owner=root group=www-data mode=0640 state=present
+  become: true
+
+- name: Ensure nginx SSL folders
+  file: path=/etc/nginx/ssl state=directory
+  become: true
+
+- name: Create NGINX certificates
+  command: openssl req -new -nodes -x509 -subj "/C=GB/ST=London/L=London/O=IT/CN=webserver.local" -days 365 -keyout /etc/nginx/ssl/server.key -out /etc/nginx/ssl/server.crt -extensions v3_ca creates=/etc/nginx/ssl/server.crt
+  notify: Restart Nginx
+  become: true
+
+- name: Copy Generic Security Config
+  copy: src="{{ role_path }}/files/security.conf" dest=/etc/nginx/conf.d/security.conf
+  notify: Restart Nginx
+  become: true
+
+- name: Copy config
+  copy: src="{{ role_path }}/files/default" dest=/etc/nginx/sites-available/default
+  notify: Restart Nginx
+  become: true
+
+- name: Symlink config
+  file: path=/etc/nginx/sites-enabled/default src=/etc/nginx/sites-available/default state=link
+  notify: Restart Nginx
+  become: true
+
+- name: Allow NGINX Iptables
+  iptables: chain=TCP-IN protocol=tcp state=present action=insert ctstate=NEW destination_port=443 jump=LOGALLOW
+  become: true
+  notify: IPTables Save

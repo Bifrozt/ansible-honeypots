@@ -1,0 +1,7 @@
+- name: Allow TEMP APT Iptables
+  iptables: chain=TCP-OUT protocol=tcp state=present action=insert ctstate=NEW destination_port=80 jump=LOGALLOW
+  become: true
+
+- name: Allow TEMP APT Iptables 443
+  iptables: chain=TCP-OUT protocol=tcp state=present action=insert ctstate=NEW destination_port=443 jump=LOGALLOW
+  become: true

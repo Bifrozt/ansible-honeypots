@@ -1,0 +1,56 @@
+- include: "{{ role_path }}/../common/iptables/iptables-enable-apt.yml"
+
+- name: Install gcc
+  apt: name=build-essential state=present
+  become: true
+
+- name: Install GIT
+  apt: name=build-essential state=present
+  become: true
+
+- include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"
+
+- name: Get telnetlogger
+  shell: git clone https://github.com/robertdavidgraham/telnetlogger chdir=/opt creates=/opt/telnetlogger
+  become: true
+
+- name: Build telnetlogger
+  shell: gcc telnetlogger.c -o telnetlogger -lpthread chdir=/opt/telnetlogger
+  become: true
+
+- name: Create User
+  user: name=telnet shell=/bin/false home=/opt/telnet
+  become: true
+
+- name: update permissions on telnet folder
+  file: path=/opt/telnetlogger owner=telnet group=telnet 
+  become: true
+
+- name: Stop telnetlogger
+  shell: kill $(ps aux | grep  /opt/telnetlogger/telnetlogger | grep -v grep | awk '{ print $2; }')
+  become: true
+  ignore_errors: true
+
+- name: Start telnetlogger
+  shell: start-stop-daemon --start -b --quiet --pidfile /opt/telnetlogger/telnetlogger.pid -c telnet --exec /opt/telnetlogger/telnetlogger -- -l 2223 -c /opt/telnetlogger/ipandpass.log   
+  become: true
+
+- name: Redirect telnet port
+  iptables: table=nat chain=PREROUTING protocol=tcp destination_port=23 jump=REDIRECT to_ports=2223
+  become: true
+  notify: IPTables Save
+
+- name: Allow Telnet IN
+  iptables: chain=TCP-IN protocol=tcp state=present action=insert ctstate=NEW destination_port=23 jump=LOGALLOW
+  become: true
+  notify: IPTables Save
+
+- name: Allow Telnet IN 2223
+  iptables: chain=TCP-IN protocol=tcp state=present action=insert ctstate=NEW destination_port=2223 jump=LOGALLOW
+  become: true
+  notify: IPTables Save
+
+- name: Set up filebeats
+  copy: src="{{ role_path }}/files/hp-telnet.yml" dest="/etc/filebeat/conf.d/hp-telnet.yml"
+  become: true
+  notify: Restart Filebeat
