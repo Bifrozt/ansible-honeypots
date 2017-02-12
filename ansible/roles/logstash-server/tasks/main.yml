@@ -37,6 +37,16 @@
   service: enabled=yes state=started name=logstash
   become: true
 
+- name: Download GeoIP ASNUm database
+  get_url: url=http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz dest=/tmp/GeoIPASNum.dat.gz 
+
+- name: Unzip Geoip
+  shell: gunzip -f /tmp/GeoIPASNum.dat.gz
+
+- name: Move GeoIP DB
+  shell: mv /tmp/GeoIPASNum.dat /etc/logstash/.
+  become: true
+
 - include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"
 
 - name: Create Allow Logstash Chain

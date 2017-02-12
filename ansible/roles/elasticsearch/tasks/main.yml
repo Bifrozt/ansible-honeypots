@@ -49,6 +49,7 @@
 
 - name: Add Metricbeat template
   shell: curl -XPUT 'http://localhost:9200/_template/metricbeat' -d@/tmp/metricbeat.template.json
+  ignore_errors: yes
 
 #- name: Copy Metricbeat Dashboard file
 #  copy: src="{{ role_path }}/files/import_dashboards_metricbeat" dest="/tmp/import_dashboards_metricbeat" mode="u=rwx,g=rwx,o=rx"

@@ -5,14 +5,14 @@
   become: true
 
 - name: Install GIT
-  apt: name=build-essential state=present
+  apt: name=git state=present
   become: true
-
-- include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"
 
 - name: Get telnetlogger
   shell: git clone https://github.com/robertdavidgraham/telnetlogger chdir=/opt creates=/opt/telnetlogger
   become: true
+
+- include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"
 
 - name: Build telnetlogger
   shell: gcc telnetlogger.c -o telnetlogger -lpthread chdir=/opt/telnetlogger
