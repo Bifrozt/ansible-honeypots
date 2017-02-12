@@ -29,6 +29,15 @@
   become: true
   notify: Restart Logstash
 
+- name: Copy over Lookups
+  copy: src="{{ role_path }}/files/lookups" dest="/etc/logstash/"
+  become: true
+
+- name: Add Translate Plugin
+  shell: /usr/share/logstash/bin/logstash-plugin install logstash-filter-translate
+  become: true
+  notify: Restart Logstash
+
 - name: Add Logstash user to ADM group
   user: name=logstash groups=adm append=yes
   become: true
