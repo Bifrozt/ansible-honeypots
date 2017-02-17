@@ -1,0 +1,80 @@
+- include: "{{ role_path }}/../common/iptables/iptables-enable-apt.yml"
+
+- name: Check cowrie exists
+  shell: ls -l /opt/cowrie
+  register: cowrie_exists
+  ignore_errors: true
+
+
+- name: Install Prereqs
+  apt: name={{ item }} 
+  become: true
+  with_items: 
+    - git
+    - virtualenv
+    - libmpfr-dev
+    - libssl-dev
+    - libmpc-dev
+    - libffi-dev
+    - build-essential
+    - libpython-dev
+    - python2.7-minimal
+
+- name: Clone Cowrie
+  shell: git clone https://github.com/micheloosterhof/cowrie.git /opt/cowrie
+  become: true
+  when: cowrie_exists.rc==2
+
+- name: Generate Password
+  shell: date | md5sum | awk '{ print $1; }'
+  register: cowrie_password
+
+- name: Create cowrie user
+  user: name=cowrie home=/opt/cowrie password={{ cowrie_password.stdout }} 
+  become: true
+
+- name: Ensure owner of cowrie folder
+  file: path=/opt/cowrie owner=cowrie recurse=yes group=cowrie state=directory
+  become: true
+
+- name: Create Virtual Env
+  shell: virtualenv cowrie-env chdir=/opt/cowrie creates=/opt/cowrie/cowrie-env
+  become: true
+  become_user: cowrie
+
+- name: Install pip packages
+  pip: virtualenv=/opt/cowrie/cowrie-env chdir=/opt/cowrie requirements=requirements.txt
+  become: true
+  become_user: cowrie
+
+- include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"
+
+- name: Copy over configuration
+  copy: src={{ role_path }}/files/cowrie.cfg dest=/opt/cowrie/cowrie.cfg group=cowrie owner=cowrie
+  become: true
+
+- name: Stop Cowrie
+  shell: ./stop.sh chdir=/opt/cowrie
+  ignore_errors: true
+  become: true
+  become_user: cowrie
+
+- name: Start Cowrie
+  shell: ./start.sh cowrie-env chdir=/opt/cowrie
+  become: true
+  become_user: cowrie
+
+- name: Redirect SSH port
+  iptables: table=nat chain=PREROUTING protocol=tcp destination_port=22 jump=REDIRECT to_ports=2222
+  become: true
+  notify: IPTables Save
+
+- name: Allow SSH IN 2222
+  iptables: chain=TCP-IN protocol=tcp state=present action=insert ctstate=NEW destination_port=2222 jump=LOGALLOW
+  become: true
+  notify: IPTables Save
+
+- name: Copy over Filebeat Config
+  copy: src={{ role_path }}/files/cowrie.yml dest=/etc/filebeat/conf.d/cowrie.yml 
+  become: true
+  notify: Restart Filebeat

@@ -5,3 +5,4 @@
     - filebeat
     - hp-telnet
     - metricbeat
+    - cowrie

@@ -31,6 +31,10 @@ Vagrant.configure("2") do |config|
 	honeypot1.vm.provision "shell", inline: <<-SHELL	
 		apt-get update -y
 		apt-get install -y python
+
+		sed -i 's/Port 22/Port 2022/' /etc/ssh/sshd_config
+
+		service ssh restart
 	SHELL
   end
 

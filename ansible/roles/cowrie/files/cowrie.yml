@@ -1,0 +1,8 @@
+filebeat.prospectors:
+
+- input_type: log
+
+  # Paths that should be crawled and fetched. Glob based paths.
+  paths:
+    - /opt/cowrie/log/cowrie.json
+  tags: ["cowrie", "json"]
