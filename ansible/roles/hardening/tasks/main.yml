@@ -1,5 +1,5 @@
 - name: Copy over base Iptables Rules
-  copy: src="{{ role_path }}/files/iptables-rules" dest=/etc/iptables-rules
+  template: src="{{ role_path }}/files/iptables-rules" dest=/etc/iptables-rules
   become: true
 
 - name: Create IPTables IFUp script

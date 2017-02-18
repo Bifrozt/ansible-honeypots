@@ -25,8 +25,7 @@
 -A LOGALLOW -j ACCEPT
 -A LOGDROP -m limit --limit 5/sec -j LOG --log-prefix "IPTables-Dropped: " --log-level info
 -A LOGDROP -j DROP
--A TCP-IN -p tcp -m tcp --dport 22 -j LOGALLOW
--A TCP-IN -p tcp -m tcp --dport 2022 -j LOGALLOW
+-A TCP-IN -p tcp -m tcp --dport {{ hostvars[inventory_hostname]['ansible_port'] | default('22') }} -j LOGALLOW
 -A TCP-IN -j RETURN
 -A TCP-OUT -j RETURN
 -A UDP-IN -m pkttype --pkt-type broadcast -j DROP
