@@ -1,8 +1,9 @@
 ---	
 - hosts: honeypot
+  vars:
+    - cowrie_telnet: true
   roles:
     - hardening
     - filebeat
-    - hp-telnet
     - metricbeat
     - cowrie

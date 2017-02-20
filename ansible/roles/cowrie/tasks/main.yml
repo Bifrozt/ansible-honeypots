@@ -50,7 +50,19 @@
 - include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"
 
 - name: Copy over configuration
-  copy: src={{ role_path }}/files/cowrie.cfg dest=/opt/cowrie/cowrie.cfg group=cowrie owner=cowrie
+  template: src={{ role_path }}/files/cowrie.cfg dest=/opt/cowrie/cowrie.cfg group=cowrie owner=cowrie
+  become: true
+
+- name: Copy over hosts file
+  copy: src={{ role_path }}/files/cowrie/hosts dest=/opt/cowrie/honeyfs/etc/hosts group=cowrie owner=cowrie
+  become: true
+
+- name: Copy over passwd file
+  copy: src={{ role_path }}/files/cowrie/passwd dest=/opt/cowrie/honeyfs/etc/passwd group=cowrie owner=cowrie
+  become: true
+
+- name: Copy over shadow file
+  copy: src={{ role_path }}/files/cowrie/shadow dest=/opt/cowrie/honeyfs/etc/shadow group=cowrie owner=cowrie
   become: true
 
 - name: Stop Cowrie
@@ -73,6 +85,18 @@
   iptables: chain=TCP-IN protocol=tcp state=present action=insert ctstate=NEW destination_port=2222 jump=LOGALLOW
   become: true
   notify: IPTables Save
+
+- name: Allow Telnet IN 2223
+  iptables: chain=TCP-IN protocol=tcp state=present action=insert ctstate=NEW destination_port=2223 jump=LOGALLOW
+  become: true
+  notify: IPTables Save
+  when: cowrie_telnet|bool ==true
+
+- name: Redirect Telnet port
+  iptables: table=nat chain=PREROUTING protocol=tcp destination_port=23 jump=REDIRECT to_ports=2223
+  become: true
+  notify: IPTables Save
+  when: cowrie_telnet|bool ==true
 
 - name: Copy over Filebeat Config
   copy: src={{ role_path }}/files/cowrie.yml dest=/etc/filebeat/conf.d/cowrie.yml 
