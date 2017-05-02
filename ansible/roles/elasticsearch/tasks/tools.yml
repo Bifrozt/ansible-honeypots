@@ -1,0 +1,16 @@
+- name: Install Python elasticsearch
+  apt: package=python-elasticsearch update_cache=true state=present
+  become: true
+
+- name: Ensure Opt directory is there
+  file: path=/opt/elastic-tools state=directory owner=root
+  become: true
+
+- name: Copy Index Cleanup Script
+  copy: src="{{ role_path }}/files/tools/cleanup-indices.py" dest=/opt/elastic-tools/index-cleanup.py mode="u=rwx,g=rwx,o=r"
+  become: true
+
+- name: Create CRON entrye for index cleanup
+  cron: minute=0 hour=0 user=root job="python /opt/elastic-tools/index-cleanup.py --delete"
+  become: true
+

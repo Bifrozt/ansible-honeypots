@@ -1,0 +1,60 @@
+- include: "{{ role_path }}/../common/iptables/iptables-enable-apt.yml"
+- name: Install Prereqs
+  apt: name={{ item }}
+  become: true
+  with_items:
+    - python2.7 
+    - python-openssl 
+    - python-gevent 
+    - libevent-dev 
+    - python2.7-dev 
+    - build-essential 
+    - make
+    - python-chardet 
+    - python-requests 
+    - python-sqlalchemy 
+    - python-lxml
+    - python-beautifulsoup 
+    - mongodb 
+    - python-pip 
+    - python-dev 
+    - python-setuptools
+    - g++ 
+    - git 
+    - php7.0 
+    - php7.0-dev 
+    - liblapack-dev 
+    - gfortran 
+    - libmysqlclient-dev
+    - libxml2-dev 
+    - libxslt-dev
+
+- name: Clone PHP Sandbox
+  shell: git clone https://github.com/mushorg/BFR.git chdir=/opt creates=/opt/BFR
+  become: true
+
+- name: phpize and configure
+  shell: phpize; ./configure --enable-bfr chdir=/opt/BFR
+  become: true
+
+- name: install PHP Sandbox
+  shell: make && make install chdir=/opt/BFR
+  become: true
+
+- name: Configure PHP ini
+  lineinfile: name=/etc/php/7.0/cli/php.ini line="zend_extension = /usr/lib/php/20151012/bfr.so"
+  become: true
+
+- name: Install Glastopf
+  pip: name=glastopf
+  become: true
+
+- name: Create GLastopf folder
+  file: name=/opt/glastopf type=directory
+  become: true
+
+- name: Create Glastopf config
+  shell: glastopf-runner chdir=/opt/glastopf
+  become: true
+  
+- include: "{{ role_path }}/../common/iptables/iptables-disable-apt.yml"

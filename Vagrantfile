@@ -43,7 +43,9 @@ Vagrant.configure("2") do |config|
 	control.vm.network "private_network", ip: "192.168.33.9"
 	control.vm.provision "shell", inline: <<-SHELL
 		apt-get update -y
-		apt-get install -y ansible
+		apt-get install -y ansible python-pip
+
+		pip install elasticsearch
 
 		mkdir /etc/ansible/keys
 		cp /vagrant/.vagrant/machines/server/virtualbox/private_key /etc/ansible/keys/server
